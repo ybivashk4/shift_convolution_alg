@@ -69,4 +69,6 @@ struct triad {
     bool is_visible;
 };
 
+
+
 #endif

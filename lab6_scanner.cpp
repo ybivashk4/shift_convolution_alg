@@ -5,18 +5,22 @@
 #include "lab6.h"
 #include <string>
 
+static void MyError(std::string msg) {
+    std::cout << "Scanner error: " << msg << std::endl;
+    exit(1);
+}
 
 Scanner::Scanner(int argc, char ** argv) {
     if (argc > 1) {
         file_read.open(argv[1], std::ios_base::in);
         file_read >> read_s;
         if (!file_read.is_open()) {
-            throw "can't open file";
+            MyError("can't open file");
         }
         native = "=;+-*/()";
     }
     else {
-        throw "Few arguments - need input file and output file";
+        MyError("Few arguments - need input file and output file");
     }   
 }
 
@@ -65,7 +69,7 @@ Symbol Scanner::get_lexem() {
         get();
     }
     else
-        throw "Unknown symbol";
+        MyError("Unknown symbol");
     return ret_symb;
 }
 
@@ -78,41 +82,3 @@ void Scanner::run(std::list<Symbol> &inp) {
     while (out_s.symbol != '!');
     file_read.close();
 }
-
-// // Выведем все записаные лексемы на экран
-// void test_Scanner(int argc, char ** argv) {
-//     std::ifstream is;
-//     is.open(argv[2], std::ios::binary|std::ios::in);
-//     if (is.is_open()) {
-//         std::cout << "хайп " << argv[2];
-//     }
-//     is.seekg (0, is.end);
-//     int length = is.tellg();
-//     is.seekg (0, is.beg);
-//     std::cout << "len is " << length << std::endl;
-//     Symbol * buffer = new Symbol[length];
-//     is.read((char *)buffer, length);
-//     for (int i=0;i<length / sizeof(Symbol);i++) {
-//         buffer[i].out();
-//     }
-//     is.close();
-//     // delete[] buffer;
-// }
-
-// int main (int argc, char ** argv) {
-//     int error = 0;
-//     try {
-//         Scanner main_scanner(argc, argv);
-//         main_scanner.run();
-//         // test_Scanner(argc, argv);
-//     }
-//     catch (std::string msg) {
-//         std::cout << "You have an error\n" << msg << std::endl;
-//         error = 1;
-//     }
-//     catch(std::exception e) {
-//         std::cout << e.what() << std::endl;
-//         error = 2;
-//     }
-//     return error;
-// }

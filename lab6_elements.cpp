@@ -6,7 +6,10 @@ std::list<Symbol> input;
 std::vector<Symbol> stack;
 std::map<std::string, int> all_variables;
 
-
+static void MyError(std::string msg) {
+    std::cout << "shift_convolution error: "<< msg << std::endl;
+    exit(1);
+}
 
 static const std::vector<Rule> rules = {
         {'S', "I=E;"},
@@ -26,18 +29,21 @@ static const std::vector<Rule> rules = {
 };
 
 void set_var(std::string name, int val) {
+
     all_variables[name] = val;
 }
 
 int get_var(const std::string var){
-   if (all_variables.find( var ) != all_variables.end()) {
-        return all_variables[var];
-   }
-    throw "Invalid syntax\n";
+
+    if (all_variables.find( var ) != all_variables.end()) {
+            return all_variables[var];
+    }
+    MyError("Invalid syntax");
     
 }
 
 void getAllVar() {
+
     std::cout << "\n\tALL results var is: \n";
     for (const auto & [key, value] : all_variables) {
         std::cout << key << " = " << value << std::endl;
@@ -91,8 +97,7 @@ int g(std::string rule) {
 }
 
 void run() {
-    Symbol first_sym('!');
-    stack.push_back(first_sym);
+
     while (input.size() > 0) {
         Symbol x = stack.back();
         Symbol y = input.front();
@@ -100,10 +105,9 @@ void run() {
 
         // Алгоритм сдвиг-свёртка
         Relation cur_rel = find_rel(x.symbol, y.symbol);
-        std::cout << (char)cur_rel << " " << x.symbol << " " << y.symbol << std::endl;
         if (cur_rel == None) {
             // Ошибка
-            throw "Syntax error";
+            MyError("Syntax error");
         }
         else if (cur_rel == Before || cur_rel == Together || cur_rel == Dual) {
             // СДВИГ
@@ -115,26 +119,37 @@ void run() {
             std::string rule("");
             std::vector<Symbol> symbol_rule;
             // Достаём правило, которое до > и после <
+            int i = 0;
+            int old_stack_len = stack.size();
             while (cur_rel != Before) {
                 std::string tmp(1, x.symbol);
                 symbol_rule.insert(symbol_rule.begin(), x);
                 rule = tmp + rule;
                 y = x;
                 stack.pop_back();
+                if (stack.empty()) {
+                    break;
+                }
                 x = stack.back();
+                if (!x.symbol) {
+                    stack.pop_back();
+                    break;
+                }
                 cur_rel = find_rel(x.symbol, y.symbol);
+                i++;
             }
             
             // Свёртка следующего по длине правила
+            
             int n = g(rule);
             
             while (n == -1 && rule != "") {
-                y.symbol = rule.front();
-                rule.erase(0);
+                x.symbol = rule.front();
+                rule.erase(0, 1);
+                stack.insert(stack.begin()+(old_stack_len - i--), symbol_rule[0]);
                 symbol_rule.erase(symbol_rule.begin());
                 if (rule == "") break;
-
-                x.symbol = rule.front();
+                y.symbol = rule.front();
                 cur_rel = find_rel(x.symbol, y.symbol);
                 if (cur_rel == Dual) {
                     n = g(rule);
@@ -143,16 +158,11 @@ void run() {
             
             // Такого правила нет
             if (n == -1) {
-                throw "Invalid syntax";
+                MyError("Invalid syntax");
             }
 
             // замена правила на его левую часть
-            int m = g(rule);
-            while (m != -1) {
-                rule = rules[m].get_l();
-                m = g(rule);
-            }
-            
+            rule = rules[n].get_l();
             // Далее надо по номеру правила выполнить операции
             Symbol new_s(rule[0]);
             switch (++n) {
@@ -173,7 +183,6 @@ void run() {
                     break;
                 case 4:
                     std::cout << "parse complete!\n";
-                    exit(0);
                     break;
                 case 5:
                     new_s.int_value = symbol_rule[0].int_value * symbol_rule[2].int_value;
@@ -224,7 +233,7 @@ void run() {
                     input.push_front(input.front());                 
                     break;
                 case -1:
-                    throw "Syntax error";
+                    MyError("Invalid syntax");
                     break;
             }
 
@@ -238,33 +247,11 @@ int main (int argc, char ** argv) {
     Symbol first_symbol;
     first_symbol.symbol = '!';
     stack.push_back(first_symbol);
+    
     Scanner my_scan(argc, argv);
-
-    try {
-        my_scan.run(input);
-        run();
-        getAllVar();
-    }
-    catch (std::string e) {
-        std::cout << e;
-    }
-    catch (std::exception e) {
-        std::cout << e.what();
-    }
+    my_scan.run(input);
+    run();
+    getAllVar();
+    
 }
 
-
-/*
-stack.push_back(new_s);
-input.push_front(input.front());
-
-repalce
-
-Symbol tmp = stack.back();
-stack.pop_back();
-stack.push_back(new_s);
-input.push_front(input.front());
-stack.push_back(new_s);
-input.push_front(input.front());
-
-*/
